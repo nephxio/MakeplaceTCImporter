@@ -2,8 +2,7 @@
 Python Script to import an FFXIV Makeplace JSON file into a Teamcraft list
 
 # Known issues
-1) Does not import external furnishings or things like walls/chandeliers/floors
-2) Does not import dyes
+1) Does not import dyes
 
 # Instructions
 1) Download the latest .exe file from the releases tab on the right
