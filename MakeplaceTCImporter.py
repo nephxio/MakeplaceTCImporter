@@ -38,7 +38,7 @@ def construct_teamcraft_url(import_string: str, callback_url: Optional[str] = No
     return url
 
 
-def get_teamcraft_list_url(import_string: str, callback_url: Optional[str] = None) -> str:
+def get_teamcraft_list_url(import_string: str, callback_url: Optional[str] = None) -> None:
     """
     Makes an HTTP request to the Teamcraft import URL and returns the resulting list URL.
 
@@ -57,7 +57,8 @@ def get_teamcraft_list_url(import_string: str, callback_url: Optional[str] = Non
     print("URL opened in a new browser tab.")
 
 
-def write_item_lists_to_file(item_list: Dict[str, int], import_string: str, dye_list: Optional[Dict[str, int]] = None) -> None:
+def write_item_lists_to_file(item_list: Dict[str, List[int]], import_string: str,
+                             dye_list: Optional[Dict[str, int]] = None) -> None:
     """
     Writes item lists to a file selected by the user.
 
@@ -111,12 +112,33 @@ def extract_makeplace_items() -> Tuple[Dict[str, Any], str]:
     makeplace_dyes: Dict[str, int] = {}
     teamcraft_import_string = ''
 
-    for item in makeplace_data.get('interiorFurniture', []):
-        item_name = item.get('name', 'Unknown')
-        if item_name in makeplace_items:
-            makeplace_items[item_name][1] += 1
+    for int_fixture in makeplace_data.get('interiorFixture', []):
+        fixture_name = int_fixture.get('name', 'Unknown')
+        if fixture_name in makeplace_items:
+            makeplace_items[fixture_name][1] += 1
         else:
-            makeplace_items[item_name] = [int(item['itemId']), 1]
+            makeplace_items[fixture_name] = [int(int_fixture['itemId']), 1]
+
+    for ext_fixture in makeplace_data.get('interiorFixture', []):
+        fixture_name = ext_fixture.get('name', 'Unknown')
+        if fixture_name in makeplace_items:
+            makeplace_items[fixture_name][1] += 1
+        else:
+            makeplace_items[fixture_name] = [int(ext_fixture['itemId']), 1]
+
+    for int_furniture in makeplace_data.get('interiorFurniture', []):
+        furniture_name = int_furniture.get('name', 'Unknown')
+        if furniture_name in makeplace_items:
+            makeplace_items[furniture_name][1] += 1
+        else:
+            makeplace_items[furniture_name] = [int(int_furniture['itemId']), 1]
+
+    for ext_furniture in makeplace_data.get('exteriorFurniture', []):
+        furniture_name = ext_furniture.get('name', 'Unknown')
+        if furniture_name in makeplace_items:
+            makeplace_items[furniture_name][1] += 1
+        else:
+            makeplace_items[furniture_name] = [int(ext_furniture['itemId']), 1]
 
     item_count = len(makeplace_items)
     for index, (key, value) in enumerate(makeplace_items.items()):
