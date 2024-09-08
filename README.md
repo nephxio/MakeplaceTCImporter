@@ -1,8 +1,12 @@
 # MakeplaceTCImporter
 Python Script to import an FFXIV Makeplace JSON file into a Teamcraft list
 
-# Known issues
-1) Does not import dyes
+# Issue Reporting
+If you find issues, please go to the issues tab at the top left of the page and 
+create a new issue for me.
+
+# Known Issues
+None
 
 # Instructions
 1) Download the latest .exe file from the releases tab on the right
