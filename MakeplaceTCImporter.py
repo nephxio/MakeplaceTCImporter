@@ -3,6 +3,7 @@ import base64
 import webbrowser
 from tkinter import filedialog
 from typing import Optional, IO, Dict, List, Tuple, Any
+from dye_data import dye_data
 
 
 def main() -> None:
@@ -54,7 +55,6 @@ def get_teamcraft_list_url(import_string: str, callback_url: Optional[str] = Non
 
     # Open the URL in a new browser tab
     webbrowser.open_new_tab(teamcraft_url)
-    print("URL opened in a new browser tab.")
 
 
 def write_item_lists_to_file(item_list: Dict[str, List[int]], import_string: str,
@@ -72,32 +72,10 @@ def write_item_lists_to_file(item_list: Dict[str, List[int]], import_string: str
 
     if file_handle:
         with file_handle as file:
-            file.write('Artisan Import String\n')
-            file.write('----------------\n')
-            file.write(import_string)
-
-            file.write('\n\n')
-
-            file.write('Artisan List\n')
-            file.write('----------------\n')
-            for key, value in item_list.items():
-                for _ in range(value[1]):
-                    file.write(f'{key}\n')
-
-            file.write('\n\n')
-
-            file.write('Makeplace Items\n')
+            file.write('Shopping List\n')
             file.write('----------------\n')
             for item, count in item_list.items():
-                file.write(f'{item}: {count}\n')
-
-            file.write('\n\n')
-
-            if dye_list is not None:
-                file.write('Makeplace Dyes\n')
-                file.write('----------------\n')
-                for dye, count in dye_list.items():
-                    file.write(f'{dye}: {count}\n')
+                file.write(f'{item} x{count[1]}\n')
 
 
 def extract_makeplace_items() -> Tuple[Dict[str, Any], str]:
@@ -109,36 +87,48 @@ def extract_makeplace_items() -> Tuple[Dict[str, Any], str]:
     """
     makeplace_data = load_makeplace_file()
     makeplace_items: Dict[str, List[int]] = {}
-    makeplace_dyes: Dict[str, int] = {}
     teamcraft_import_string = ''
 
-    for int_fixture in makeplace_data.get('interiorFixture', []):
-        fixture_name = int_fixture.get('name', 'Unknown')
-        if fixture_name in makeplace_items:
-            makeplace_items[fixture_name][1] += 1
+    def process_item(item: Dict[str, Any]) -> None:
+        item_name = item.get('name', 'Unknown')
+        item_id = int(item['itemId'])
+
+        # Discard items with an itemId of 0
+        if item_id == 0:
+            return
+
+        color_value = item.get('properties', {}).get('color', '')[
+                      :6]  # Extract the color value without the alpha channel
+
+        if color_value and color_value in dye_data:
+            color_id = dye_data[color_value][1]
+            if item_name in makeplace_items:
+                makeplace_items[item_name][1] += 1
+            else:
+                makeplace_items[item_name] = [item_id, 1]
+
+            color_name = f"{dye_data[color_value][0]}"
+            if color_name in makeplace_items:
+                makeplace_items[color_name][1] += 1
+            else:
+                makeplace_items[color_name] = [color_id, 1]
         else:
-            makeplace_items[fixture_name] = [int(int_fixture['itemId']), 1]
+            if item_name in makeplace_items:
+                makeplace_items[item_name][1] += 1
+            else:
+                makeplace_items[item_name] = [item_id, 1]
+
+    for int_fixture in makeplace_data.get('interiorFixture', []):
+        process_item(int_fixture)
 
     for ext_fixture in makeplace_data.get('interiorFixture', []):
-        fixture_name = ext_fixture.get('name', 'Unknown')
-        if fixture_name in makeplace_items:
-            makeplace_items[fixture_name][1] += 1
-        else:
-            makeplace_items[fixture_name] = [int(ext_fixture['itemId']), 1]
+        process_item(ext_fixture)
 
     for int_furniture in makeplace_data.get('interiorFurniture', []):
-        furniture_name = int_furniture.get('name', 'Unknown')
-        if furniture_name in makeplace_items:
-            makeplace_items[furniture_name][1] += 1
-        else:
-            makeplace_items[furniture_name] = [int(int_furniture['itemId']), 1]
+        process_item(int_furniture)
 
     for ext_furniture in makeplace_data.get('exteriorFurniture', []):
-        furniture_name = ext_furniture.get('name', 'Unknown')
-        if furniture_name in makeplace_items:
-            makeplace_items[furniture_name][1] += 1
-        else:
-            makeplace_items[furniture_name] = [int(ext_furniture['itemId']), 1]
+        process_item(ext_furniture)
 
     item_count = len(makeplace_items)
     for index, (key, value) in enumerate(makeplace_items.items()):
@@ -146,7 +136,6 @@ def extract_makeplace_items() -> Tuple[Dict[str, Any], str]:
         if index < item_count - 1:
             teamcraft_import_string += ";"
 
-    print(teamcraft_import_string)
     return makeplace_items, teamcraft_import_string
 
 
